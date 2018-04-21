@@ -1,12 +1,21 @@
 #include <Servo.h>
 String mensaje;
 float duration, nivel;
-int pinServo= 2;
-String estado = "idle";
-bool vaso = false;
+
+int pinServo= 4;
+char estado = 'A';
+int vaso = 0;
+int pinVaso = 2;
 bool valvula = false;
 bool bandTemp=0;
-int pinCalentador;
+int pinCalentador = 3;
+
+const int analogInPin = A0;  // Analog input pin that the potentiometer is attached to
+
+float tempc = 0;        // value read from the pot
+float sensorValue = 0;
+
+const byte interruptPin = 2;
 
 
 Servo servo;
@@ -18,6 +27,9 @@ void setup()
  Serial.begin(9600);
 
   delay(3000);
+
+  pinMode(interruptPin, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), blink, CHANGE);
 }
  
 void loop()
@@ -29,20 +41,32 @@ void loop()
       mensaje=Serial.readString();
   }
 
+  if(mensaje.equals("init") && vaso){
+    estado = 'B'; 
+   }else{
+      estado = 'A';
+    }
+
 
   
   switch(estado){
     
-   case idle: 
+   case 'A': 
           turnOffAll();
           break; 
-   case start: 
+   case 'B': 
           startAll();
+          digitalWrite(pinCalentador, encender_res(80,temperatura()));
           break;
-
-    
+     default: break;
    }
-  
+
+
+   Serial.println("Temperatura: "+ String(tempc));
+   Serial.println("Vaso:"+String(vaso));
+   Serial.println("Vaso:"+String(estado));
+   
+
 }
 
 void readWaterLevel(void){
@@ -62,7 +86,7 @@ void readWaterLevel(void){
 
 void turnOffAll(void){
     servo.write(0);
-    digitalWrite(calentar, LOW);
+    digitalWrite(pinCalentador, LOW);
   }
 
 void startAll(void){
@@ -76,6 +100,23 @@ bool encender_res(float valDeseado, float valEntrada)
   if(valEntrada == valDeseado) bandTemp = 1;
   if(valEntrada == valDeseado-5.0) bandTemp = 0;
   
-  if(valEntrada < valDeseado and bandTemp = 0) return HIGH;
+  if(valEntrada < valDeseado && bandTemp == 0) return HIGH;
   else return LOW;
 }
+
+float temperatura (void)
+{
+  // lee valor analogico
+  sensorValue = analogRead(analogInPin);
+  
+  // conversion a temperatura
+  tempc = sensorValue * 5.0 * 100.0 / 1024.0;
+
+  //Tiempo de espera para leer adc
+  delay(2);
+  return tempc;
+}
+
+void monitorVaso(){
+    vaso = digitalRead(pinVaso);
+  }
