@@ -4,13 +4,14 @@ float duration, nivel;
 
 int pinServo= 4;
 char estado = 'A';
+char pEstado = 0;
 int vaso = 0;
 int pinVaso = 2;
 bool valvula = false;
 bool bandTemp=0;
-int pinCalentador = 3;
+int pinCalentador = 4;
 
-const int analogInPin = A0;  // Analog input pin that the potentiometer is attached to
+const int analogInPin = A0;  // Entrada analogica para el sensor de temperatura
 
 float tempc = 0;        // value read from the pot
 float sensorValue = 0;
@@ -29,7 +30,7 @@ void setup()
   delay(3000);
 
   pinMode(interruptPin, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(interruptPin), blink, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(interruptPin), monitorVaso, CHANGE);
 }
  
 void loop()
@@ -41,31 +42,38 @@ void loop()
       mensaje=Serial.readString();
   }
 
-  if(mensaje.equals("init") && vaso){
+  if(mensaje.equals("init") && vaso == 1 && nivel > 10.0){
+    pEstado = 1;
     estado = 'B'; 
-   }else{
+    
+   }
+   else{
+      pEstado = 0;
       estado = 'A';
+
     }
 
-
+  Serial.println(mensaje);
   
   switch(estado){
     
    case 'A': 
-          turnOffAll();
+          turnOffAll();           // apaga todo
+
           break; 
    case 'B': 
           startAll();
-          digitalWrite(pinCalentador, encender_res(80,temperatura()));
+          digitalWrite(pinCalentador, encender_res(29,tempc = temperatura()));
+          Serial.println("Estado: B");
           break;
      default: break;
    }
 
 
-   Serial.println("Temperatura: "+ String(tempc));
-   Serial.println("Vaso:"+String(vaso));
-   Serial.println("Vaso:"+String(estado));
    
+   Serial.println("Vaso:"+String(vaso));
+   Serial.println("Estado:"+String(estado));
+   Serial.println("Agua:"+String(nivel));
 
 }
 
@@ -90,7 +98,7 @@ void turnOffAll(void){
   }
 
 void startAll(void){
-  servo.write(45);
+   servo.write(45);
     digitalWrite(pinCalentador, HIGH);
   }
 
@@ -114,6 +122,7 @@ float temperatura (void)
 
   //Tiempo de espera para leer adc
   delay(2);
+  Serial.println("Temperatura: "+ String(tempc));
   return tempc;
 }
 
