@@ -1,13 +1,18 @@
 #include <Servo.h>
 String mensaje;
 float duration, nivel;
+
 int pinServo= 2;
-String estado = "idle";
+char estado = 'A';
 bool vaso = false;
 bool valvula = false;
 bool bandTemp=0;
-int pinCalentador;
+int pinCalentador = 3;
 
+const int analogInPin = A0;  // Analog input pin that the potentiometer is attached to
+
+float tempc = 0;        // value read from the pot
+float sensorValue = 0;
 
 Servo servo;
 void setup()
@@ -29,19 +34,22 @@ void loop()
       mensaje=Serial.readString();
   }
 
-
   
   switch(estado){
     
-   case idle: 
+   case 'A': 
           turnOffAll();
           break; 
-   case start: 
+   case 'B': 
           startAll();
+          digitalWrite(pinCalentador, encender_res(80,temperatura()));
           break;
+     default: break;
 
     
    }
+
+   
   
 }
 
@@ -62,7 +70,7 @@ void readWaterLevel(void){
 
 void turnOffAll(void){
     servo.write(0);
-    digitalWrite(calentar, LOW);
+    digitalWrite(pinCalentador, LOW);
   }
 
 void startAll(void){
@@ -76,6 +84,19 @@ bool encender_res(float valDeseado, float valEntrada)
   if(valEntrada == valDeseado) bandTemp = 1;
   if(valEntrada == valDeseado-5.0) bandTemp = 0;
   
-  if(valEntrada < valDeseado and bandTemp = 0) return HIGH;
+  if(valEntrada < valDeseado and bandTemp == 0) return HIGH;
   else return LOW;
+}
+
+float temperatura (void)
+{
+  // lee valor analogico
+  sensorValue = analogRead(analogInPin);
+  
+  // conversion a temperatura
+  tempc = sensorValue * 5.0 * 100.0 / 1024.0;
+
+  //Tiempo de espera para leer adc
+  delay(2);
+  return tempc;
 }
